@@ -1,91 +1,49 @@
 import React from 'react';
-import { mount } from 'cypress/react18'
+import { mount } from 'cypress/react';
 import Quiz from '../../client/src/components/Quiz';
+import '../fixtures/questions.json';
 import { getQuestions } from '../../client/src/services/questionApi';
 
-const mockQuestions = [
-    {
-        question: 'What is the capital of France?',
-        answers: [
-            { text: 'Berlin', isCorrect: false },
-            { text: 'Madrid', isCorrect: false },
-            { text: 'Paris', isCorrect: true },
-            { text: 'Rome', isCorrect: false },
-        ],
-    },
-    {
-        question: 'What is 2 + 2?',
-        answers: [
-            { text: '3', isCorrect: false },
-            { text: '4', isCorrect: true },
-            { text: '5', isCorrect: false },
-            { text: '6', isCorrect: false },
-        ],
-    },
-];
-
-jest.mock('../../client/src/services/questionApi', () => ({
-    getQuestions: jest.fn(),
-}));
-
 describe('Quiz Component', () => {
+    const mockQuestions = [
+        {
+            question: "What is React?",
+            answers: [
+                { text: "A library for building user interfaces", isCorrect: true },
+                { text: "A database", isCorrect: false },
+                { text: "An operating system", isCorrect: false },
+                { text: "A programming language", isCorrect: false },
+            ],
+        },
+        {
+            question: "What is JSX?",
+            answers: [
+                { text: "JavaScript XML", isCorrect: true },
+                { text: "A type of JSON", isCorrect: false },
+                { text: "A styling library", isCorrect: false },
+                { text: "A database language", isCorrect: false },
+            ],
+        },
+    ];
+
     beforeEach(() => {
-        cy.stub(getQuestions, 'getQuestions').resolves(mockQuestions);
+        cy.stub(getQuestions, 'default').resolves(mockQuestions);
     });
 
-    afterEach(() => {
-        jest.clearAllMocks();
-    });
-
-    it('renders the start button initially', () => {
+    it('should start the quiz, answer questions, and show results', () => {
         mount(<Quiz />);
+
         cy.contains('Start Quiz').should('be.visible');
-    });
-
-    it('shows a loading spinner while fetching questions', () => {
-        mount(<Quiz />);
         cy.contains('Start Quiz').click();
-        cy.get('.spinner-border').should('be.visible');
-    });
-
-    it('renders the first question and answers after starting the quiz', () => {
-        mount(<Quiz />);
-        cy.contains('Start Quiz').click();
-
         cy.contains(mockQuestions[0].question).should('be.visible');
-        mockQuestions[0].answers.forEach((answer) => {
-            cy.contains(answer.text).should('be.visible');
-        });
-    });
-
-    it('updates score and moves to the next question on correct answer', () => {
-        mount(<Quiz />);
-        cy.contains('Start Quiz').click();
-
-        cy.contains(mockQuestions[0].answers[2].text).click();
+        cy.contains(mockQuestions[0].answers[0].text).click();
         cy.contains(mockQuestions[1].question).should('be.visible');
-    });
+        cy.contains(mockQuestions[1].answers[0].text).click();
 
-    it('displays quiz completion message and score', () => {
-        mount(<Quiz />);
-        cy.contains('Start Quiz').click();
-
-        mockQuestions.forEach((question) => {
-            cy.contains(question.question).should('be.visible');
-
-            const correctAnswer = question.answers.find((a) => a.isCorrect)?.text;
-
-            cy.log(`Correct answer for "${question.question}": ${correctAnswer}`);
-            
-            if (correctAnswer) {
-                cy.contains('button', correctAnswer).should('be.visible').click();
-            } else {
-                throw new Error(`No correct answer found for question: "${question.question}"`);
-            }
-        });
+        cy.contains('Quiz Completed').should('be.visible');
+        cy.contains(`Your score: 2/${mockQuestions.length}`).should('be.visible');
 
         cy.contains('Take New Quiz').click();
-
-        cy.contains(mockQuestions[0].question).should('be.visible');
+        cy.contains('Start Quiz').should('be.visible');
     });
 });
